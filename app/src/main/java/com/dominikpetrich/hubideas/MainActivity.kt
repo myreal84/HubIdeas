@@ -50,6 +50,7 @@ fun HubideasApp(vm: NoteViewModel) {
 fun NotesScreen(vm: NoteViewModel) {
     var noteText by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
     val notes by vm.notes.collectAsState()
+
     Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Column(Modifier.widthIn(max = 620.dp).fillMaxWidth()) {
             Surface(shape = MaterialTheme.shapes.large, tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
@@ -72,7 +73,11 @@ fun NotesScreen(vm: NoteViewModel) {
             } else {
                 LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(notes, key = { it.id }) { item ->
-                        NoteRow(text = item.content, onRename = { newText -> vm.rename(item.id, newText) }, onRemove = { vm.delete(item.id) })
+                        NoteRow(
+                            text = item.content,
+                            onRename = { newText -> vm.rename(item.id, newText) },
+                            onRemove = { vm.delete(item.id) }
+                        )
                     }
                 }
             }

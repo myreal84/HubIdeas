@@ -1,42 +1,32 @@
 # HubIdeas
 
-Ein ruhiger **Ideenspeicher** im Dark Mode: Notizen schnell erfassen, später zu Aufgaben und Projekten formen. Erst lokal & simpel, dann schrittweise ausbauen.
+Ein ruhiger **Ideenspeicher** im Dark Mode. Schnell Notizen erfassen – später zu Aufgaben/Projekten ausbauen.
 
-## Aktueller Stand
+## Aktueller Stand (Step 5 – Daten-Layer mit Projekten)
 - **Kotlin + Jetpack Compose (Material 3, Dark Theme)**
-- Notiz-UI mit Eingabe, Liste und **3‑Punkte‑Menü** (Umbenennen / Löschen)
-- Schrittweise Integration von **Room** (persistente Notizen) via Patch‑Skripte
+- Notiz-UI: **Hinzufügen**, **Umbenennen**, **Löschen**
+- Persistenz via **Room**
+- **DB v2** mit Tabellen:
+  - `projects` (Unique-Index auf `name`), Seed: **Inbox (id=1)**
+  - `notes.projectId` (NOT NULL, Default 1) mit **FK → projects(id)**, `ON DELETE RESTRICT`, `ON UPDATE CASCADE`
+- UI zeigt **noch keine** Projekt-Auswahl/Chips (Step 6 wurde zurückgenommen)
 
 ## Schnellstart
 ```bash
 ./gradlew assembleDebug
 ```
-App starten, Notiz hinzufügen, per Menü umbenennen/löschen.
 
-## Room per Patch integrieren
-Mit unseren Patch‑Skripten lässt sich Persistenz Schritt für Schritt aktivieren.
+## Architektur
+- **MVVM**, **StateFlow**
+- **Entities**: `NoteEntity` (FK zu `ProjectEntity`), `ProjectEntity`
+- **DAOs/Repos**: Note/Project, Migration 1→2 vorhanden
 
-```bash
-# v3 – robust (nutzt python3)
-chmod +x apply_patch_v3.sh
-./apply_patch_v3.sh 1   # Gradle: kotlin-kapt + Room/Lifecycle
-./apply_patch_v3.sh 2   # Dateien: Entity/DAO/DB/Repo/ViewModel
-./apply_patch_v3.sh 3   # MainActivity an ViewModel/DB anbinden
-./apply_patch_v3.sh 4   # Build (assembleDebug)
-```
-> Falls du v2 nutzt: identische Schritte, nur mit `apply_patch_v2.sh`.
+## Roadmap
+1. **Projekt-UI** (Projekt-Chip je Notiz + „Projekt ändern“-Dialog) – *Step 6*
+2. **To-Dos** + Relationen – *Step 7*
+3. **Navigation** (Projekte/Filter) – *Step 8*
+4. Sanfte **Erinnerungen** bei Inaktivität, später AI-Helfer
 
-## Nächste Schritte (Roadmap)
-1. **Projekte & To‑Dos** als Entities/Relationen (Auto‑Projektanlage bei neuen Notizen)
-2. Einfache **Navigation** (Projekt‑Detail, Filter)
-3. Sanfte **Erinnerungen**, wenn Projekte lange inaktiv sind
-4. Feinschliff: echte Icons, Haptik, Dark‑Mode‑Tweaks, Tests/CI
-
-## Struktur (Auszug)
-- `app/src/main/java/.../MainActivity.kt` – Compose Einstieg, Dark‑UI, Menü
-- `.../data/local/*` – Room (Entity/DAO/DB)
-- `.../data/repo/*` – Repository
-- `.../ui/NoteViewModel.kt` – ViewModel & StateFlow
-
----
-_Maintainer: @myreal84_
+## Debug/Tipps
+- **Wireless Debugging** (Android 11+): Pairing-Code → `adb pair <ip:pairport>` → `adb connect <ip:debugport>`
+- **Database Inspector**: Tabellen & FK prüfen (`projects`, `notes.projectId`)
