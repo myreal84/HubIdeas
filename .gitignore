@@ -1,32 +1,32 @@
-# --- Android / Gradle ---
+# --- Android artifacts ---
 *.apk
 *.ap_
 *.aab
 *.dex
 *.class
 
-# Build outputs
-/out/
+# --- Build outputs ---
 /build/
 **/build/
+/out/
 /captures/
 
-# Gradle
+# --- Gradle ---
 .gradle/
+**/.gradle/
 /local.properties
-/.gradle/
 !gradle/wrapper/gradle-wrapper.jar
 
-# NDK / CMake
+# --- NDK / CMake ---
 .externalNativeBuild/
 .cxx/
 
-# Keystores (do NOT commit)
+# --- Keystores (do NOT commit) ---
 *.jks
 *.keystore
 *.keystore.properties
 
-# --- JetBrains / Android Studio ---
+# --- Android Studio / IntelliJ ---
 .idea/
 *.iml
 .idea/**/workspace.xml
@@ -38,10 +38,16 @@
 .idea/**/assetWizardSettings.xml
 .idea/**/navEditor.xml
 .idea/**/deploymentTargetDropDown.xml
+.idea/**/other.xml
 
-# Kotlin/Java
+# --- Kotlin/Java ---
 *.log
+*.hprof
 
-# OS files
+# --- OS cruft ---
 .DS_Store
 Thumbs.db
+
+# --- Misc ---
+/.kotlin
+/.scannerwork/
