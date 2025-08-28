@@ -194,11 +194,9 @@ fun ProjectRow(name: String, onOpen: () -> Unit, onRename: (String) -> Unit, onR
 fun ProjectDetailScreen(vm: ProjectDetailViewModel, onBack: () -> Unit) {
     val project by vm.project.collectAsState()
     val todos by vm.todos.collectAsState()
-    var selectedTab by rememberSaveable { mutableStateOf(0) }
 
     Scaffold(
-        topBar = { Column {
-
+        topBar = {
             TopAppBar(
                 navigationIcon = { IconButton(onClick = onBack) { Text("←", style = MaterialTheme.typography.titleLarge) } },
                 title = {
@@ -209,9 +207,7 @@ fun ProjectDetailScreen(vm: ProjectDetailViewModel, onBack: () -> Unit) {
                     }
                 }
             )
-        
-                ProjectDetailTabs(selected = selectedTab, onSelected = { selectedTab = it })
-            }}
+        }
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner).padding(12.dp)) {
             var text by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }

@@ -1,13 +1,7 @@
 package com.dominikpetrich.hubideas
-import com.dominikpetrich.hubideas.ui.components.ProjectDetailTabs
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-
-import android.os.Bundle
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.material3.Text
+import androidx.compose.material3.TabRowimport android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -40,17 +34,13 @@ import com.dominikpetrich.hubideas.ui.ProjectDetailViewModel
 import com.dominikpetrich.hubideas.ui.ProjectDetailViewModelFactory
 import com.dominikpetrich.hubideas.ui.TrashViewModel
 import com.dominikpetrich.hubideas.ui.TrashViewModelFactory
-import com.dominikpetrich.hubideas.data.local.entity.TodoEntity
-
-class MainActivity : ComponentActivity() {
+import com.dominikpetrich.hubideas.data.local.entity.TodoEntityclass MainActivity : ComponentActivity() {
     private val listVm by viewModels<ProjectListViewModel> { ProjectListViewModelFactory(applicationContext) }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent { HubideasApp(listVm) }
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
+}@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HubideasApp(listVm: ProjectListViewModel) {
     val DarkColors = darkColorScheme(
@@ -92,16 +82,12 @@ fun HubideasApp(listVm: ProjectListViewModel) {
             }
         }
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
+}@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectListScreen(vm: ProjectListViewModel, onOpen: (Long) -> Unit, onOpenTrash: () -> Unit) {
     var text by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
     val projects by vm.projects.collectAsState()
-    var menu by remember { mutableStateOf(false) }
-
-    Scaffold(
+    var menu by remember { mutableStateOf(false) }    Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("ideahub") },
@@ -159,9 +145,7 @@ fun ProjectListScreen(vm: ProjectListViewModel, onOpen: (Long) -> Unit, onOpenTr
             }
         }
     }
-}
-
-@Composable
+}@Composable
 fun ProjectRow(name: String, onOpen: () -> Unit, onRename: (String) -> Unit, onRemove: () -> Unit) {
     var menu by remember { mutableStateOf(false) }
     var showRename by remember { mutableStateOf(false) }
@@ -187,18 +171,36 @@ fun ProjectRow(name: String, onOpen: () -> Unit, onRename: (String) -> Unit, onR
             dismissButton = { TextButton(onClick = { showRename = false }) { Text("Abbrechen") } }
         )
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
+}@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectDetailScreen(vm: ProjectDetailViewModel, onBack: () -> Unit) {
+
+    // --- Tabs (UI only; Daten folgen in Step 2) ---
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    TabRow(selectedTabIndex = selectedTab) {
+        Tab(
+            selected = selectedTab == 0,
+            onClick = { selectedTab = 0 },
+            text = { Text("Todos") }
+        )
+        Tab(
+            selected = selectedTab == 1,
+            onClick = { selectedTab = 1 },
+            text = { Text("Notizen") }
+        )
+    }
+    if (selectedTab == 1) {
+        // Platzhalter für Notizen-Ansicht
+        Box(Modifier.fillMaxWidth().padding(16.dp)) {
+            Text("Notizen-Tab – Inhalte folgen")
+        }
+        return
+    }
+
+
     val project by vm.project.collectAsState()
-    val todos by vm.todos.collectAsState()
-    var selectedTab by rememberSaveable { mutableStateOf(0) }
-
-    Scaffold(
-        topBar = { Column {
-
+    val todos by vm.todos.collectAsState()    Scaffold(
+        topBar = {
             TopAppBar(
                 navigationIcon = { IconButton(onClick = onBack) { Text("←", style = MaterialTheme.typography.titleLarge) } },
                 title = {
@@ -209,9 +211,7 @@ fun ProjectDetailScreen(vm: ProjectDetailViewModel, onBack: () -> Unit) {
                     }
                 }
             )
-        
-                ProjectDetailTabs(selected = selectedTab, onSelected = { selectedTab = it })
-            }}
+        }
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner).padding(12.dp)) {
             var text by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
@@ -231,6 +231,7 @@ fun ProjectDetailScreen(vm: ProjectDetailViewModel, onBack: () -> Unit) {
                     }) { Text("Hinzufügen") }
                 }
             }
+            Spacer(Modifier.height(8.dp))
             if (todos.isEmpty()) {
                 Text("Noch keine Aufgaben.", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
             } else {
@@ -242,9 +243,7 @@ fun ProjectDetailScreen(vm: ProjectDetailViewModel, onBack: () -> Unit) {
             }
         }
     }
-}
-
-@Composable
+}@Composable
 fun TodoRow(item: TodoEntity, onToggle: (Boolean) -> Unit, onRemove: () -> Unit) {
     var menu by remember { mutableStateOf(false) }
     Surface(shape = MaterialTheme.shapes.large, tonalElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
@@ -260,9 +259,7 @@ fun TodoRow(item: TodoEntity, onToggle: (Boolean) -> Unit, onRemove: () -> Unit)
             }
         }
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
+}@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TrashScreen(vm: TrashViewModel, onBack: () -> Unit) {
     val items by vm.trashed.collectAsState()

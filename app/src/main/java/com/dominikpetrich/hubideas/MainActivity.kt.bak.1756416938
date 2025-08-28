@@ -192,13 +192,12 @@ fun ProjectRow(name: String, onOpen: () -> Unit, onRename: (String) -> Unit, onR
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectDetailScreen(vm: ProjectDetailViewModel, onBack: () -> Unit) {
+    var selectedTab by rememberSaveable { mutableStateOf(0) }
     val project by vm.project.collectAsState()
     val todos by vm.todos.collectAsState()
-    var selectedTab by rememberSaveable { mutableStateOf(0) }
 
     Scaffold(
-        topBar = { Column {
-
+        topBar = {
             TopAppBar(
                 navigationIcon = { IconButton(onClick = onBack) { Text("←", style = MaterialTheme.typography.titleLarge) } },
                 title = {
@@ -209,15 +208,15 @@ fun ProjectDetailScreen(vm: ProjectDetailViewModel, onBack: () -> Unit) {
                     }
                 }
             )
-        
-                ProjectDetailTabs(selected = selectedTab, onSelected = { selectedTab = it })
-            }}
+        }
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner).padding(12.dp)) {
             var text by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
             Surface(shape = MaterialTheme.shapes.large, tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(10.dp)) {
                     OutlinedTextField(
+    ProjectDetailTabs(selected = selectedTab, onSelected = { selectedTab = it })
+    androidx.compose.foundation.layout.Spacer(modifier = androidx.compose.ui.Modifier.height(8.dp))
                         value = text, onValueChange = { text = it }, placeholder = { Text("Neue Aufgabe/Notiz…") },
                         maxLines = 2, modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
@@ -231,6 +230,7 @@ fun ProjectDetailScreen(vm: ProjectDetailViewModel, onBack: () -> Unit) {
                     }) { Text("Hinzufügen") }
                 }
             }
+            Spacer(Modifier.height(8.dp))
             if (todos.isEmpty()) {
                 Text("Noch keine Aufgaben.", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
             } else {
