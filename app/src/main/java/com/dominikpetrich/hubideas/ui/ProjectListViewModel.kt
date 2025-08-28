@@ -25,7 +25,6 @@ class ProjectListViewModel(
         if (t.isEmpty()) return@launch
         val id = repo.add(t)
         // Immer automatisch eine Notiz im Projekt mit gleichem Inhalt erzeugen
-        noteDao.insert(NoteEntity(content = t, projectId = id))
     }
 
     fun rename(id: Long, name: String) = viewModelScope.launch {

@@ -54,3 +54,7 @@ Thumbs.db
 
 # Scripts
 *.sh
+
+# helper scripts (ignore)
+*.sh
+!gradlew

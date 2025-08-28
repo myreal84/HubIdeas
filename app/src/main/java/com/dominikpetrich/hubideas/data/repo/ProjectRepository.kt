@@ -1,4 +1,6 @@
 package com.dominikpetrich.hubideas.data.repo
+import com.dominikpetrich.hubideas.data.local.entity.TodoEntity
+import com.dominikpetrich.hubideas.data.local.entity.NoteEntity
 
 import com.dominikpetrich.hubideas.data.local.dao.ProjectDao
 import com.dominikpetrich.hubideas.data.local.dao.NoteDao
@@ -16,8 +18,13 @@ class ProjectRepository(
     fun trashed(): Flow<List<ProjectEntity>> = dao.getTrashed()
     fun project(id: Long) = dao.observeById(id)
 
-    suspend fun add(name: String, description: String? = null): Long =
-        dao.insert(ProjectEntity(name = name, description = description))
+    suspend fun add(name: String, description: String? = null): Long {
+        val id = dao.insert(ProjectEntity(name = name, description = description))
+        // Seed: Self-Todo + gleichnamige Notiz
+        todoDao.insert(TodoEntity(projectId = id, title = name))
+        noteDao.insert(NoteEntity(content = name, projectId = id))
+        return id
+    }
 
     suspend fun getByName(name: String): ProjectEntity? = dao.findByName(name)
 
