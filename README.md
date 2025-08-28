@@ -26,12 +26,6 @@
 ---
 
 ## 📸 Screenshots
-Lege später Bilder in `docs/screenshots/` ab und ersetze die Platzhalter:
-
-- `docs/screenshots/cover.png`
-- `docs/screenshots/projects.png`
-- `docs/screenshots/detail.png`
-- `docs/screenshots/trash.png`
 
 | Start (Projekte) | Detail (To-Dos) | Papierkorb |
 |---|---|---|
