@@ -31,8 +31,6 @@ import com.dominikpetrich.hubideas.ui.ProjectListViewModel
 import com.dominikpetrich.hubideas.ui.ProjectListViewModelFactory
 import com.dominikpetrich.hubideas.ui.ProjectDetailViewModel
 import com.dominikpetrich.hubideas.ui.ProjectDetailViewModelFactory
-import com.dominikpetrich.hubideas.ui.TrashViewModel
-import com.dominikpetrich.hubideas.ui.TrashViewModelFactory
 import com.dominikpetrich.hubideas.data.local.entity.TodoEntity
 
 class MainActivity : ComponentActivity() {
@@ -54,14 +52,11 @@ fun HubideasApp(listVm: ProjectListViewModel) {
     )
     val nav = rememberNavController()
     MaterialTheme(colorScheme = DarkColors) {
+        // global Scaffold entfernt -> jede Screen kümmert sich um ihre TopBar
         Box(Modifier.fillMaxSize()) {
             NavHost(navController = nav, startDestination = "projects") {
                 composable("projects") {
-                    ProjectListScreen(
-                        vm = listVm,
-                        onOpen = { id -> nav.navigate("project/$id") },
-                        onOpenTrash = { nav.navigate("trash") }
-                    )
+                    ProjectListScreen(listVm, onOpen = { id -> nav.navigate("project/$id") })
                 }
                 composable(
                     route = "project/{id}",
@@ -76,12 +71,6 @@ fun HubideasApp(listVm: ProjectListViewModel) {
                     )
                     ProjectDetailScreen(vm, onBack = { nav.popBackStack() })
                 }
-                composable("trash") {
-                    val vm: TrashViewModel = viewModel(
-                        factory = TrashViewModelFactory(LocalContext.current.applicationContext)
-                    )
-                    TrashScreen(vm, onBack = { nav.popBackStack() })
-                }
             }
         }
     }
@@ -89,25 +78,13 @@ fun HubideasApp(listVm: ProjectListViewModel) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProjectListScreen(vm: ProjectListViewModel, onOpen: (Long) -> Unit, onOpenTrash: () -> Unit) {
+fun ProjectListScreen(vm: ProjectListViewModel, onOpen: (Long) -> Unit) {
     var text by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
+    var alsoNote by rememberSaveable { mutableStateOf(false) }
     val projects by vm.projects.collectAsState()
-    var menu by remember { mutableStateOf(false) }
 
     Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("ideahub") },
-                actions = {
-                    Box {
-                        IconButton(onClick = { menu = true }) { Text("⋮", style = MaterialTheme.typography.titleLarge) }
-                        DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                            DropdownMenuItem(text = { Text("Papierkorb") }, onClick = { menu = false; onOpenTrash() })
-                        }
-                    }
-                }
-            )
-        }
+        topBar = { CenterAlignedTopAppBar(title = { Text("ideahub") }) }
     ) { inner ->
         Column(
             Modifier.fillMaxSize().padding(inner).padding(horizontal = 12.dp, vertical = 6.dp),
@@ -122,16 +99,24 @@ fun ProjectListScreen(vm: ProjectListViewModel, onOpen: (Long) -> Unit, onOpenTr
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                             keyboardActions = KeyboardActions(onDone = {
                                 val t = text.text.trim()
-                                if (t.isNotEmpty()) { vm.addProject(t); text = TextFieldValue("") }
+                                if (t.isNotEmpty()) { vm.addProject(t, alsoNote); text = TextFieldValue("") }
                             })
                         )
                         Spacer(Modifier.width(8.dp))
                         FilledTonalButton(onClick = {
                             val t = text.text.trim()
-                            if (t.isNotEmpty()) { vm.addProject(t); text = TextFieldValue("") }
+                            if (t.isNotEmpty()) { vm.addProject(t, alsoNote); text = TextFieldValue("") }
                         }) { Text("Erstellen") }
                     }
                 }
+                Spacer(Modifier.height(8.dp))
+                // Checkbox: beim Erstellen auch Notiz im Projekt anlegen?
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = alsoNote, onCheckedChange = { alsoNote = it })
+                    Spacer(Modifier.width(6.dp))
+                    Text("Auch eine Notiz im Projekt anlegen (gleicher Name)")
+                }
+
                 Spacer(Modifier.height(12.dp))
                 HorizontalDivider()
                 Spacer(Modifier.height(6.dp))
@@ -166,7 +151,7 @@ fun ProjectRow(name: String, onOpen: () -> Unit, onRename: (String) -> Unit, onR
                 IconButton(onClick = { menu = true }) { Text("⋮", style = MaterialTheme.typography.titleLarge) }
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                     DropdownMenuItem(text = { Text("Umbenennen") }, onClick = { menu = false; showRename = true })
-                    DropdownMenuItem(text = { Text("In Papierkorb") }, onClick = { menu = false; onRemove() })
+                    DropdownMenuItem(text = { Text("Löschen") }, onClick = { menu = false; onRemove() })
                 }
             }
         }
@@ -190,13 +175,19 @@ fun ProjectDetailScreen(vm: ProjectDetailViewModel, onBack: () -> Unit) {
 
     Scaffold(
         topBar = {
+            // Zurück-Button links in der Kopfzeile, Checkbox (ohne Text) direkt rechts neben dem Titel
             TopAppBar(
-                navigationIcon = { IconButton(onClick = onBack) { Text("←", style = MaterialTheme.typography.titleLarge) } },
+                navigationIcon = {
+                    IconButton(onClick = onBack) { Text("←", style = MaterialTheme.typography.titleLarge) }
+                },
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(project?.name ?: "…")
                         Spacer(Modifier.width(8.dp))
-                        Checkbox(checked = project?.isDone == true, onCheckedChange = { vm.toggleProject(it) })
+                        Checkbox(
+                            checked = project?.isDone == true,
+                            onCheckedChange = { vm.toggleProject(it) }
+                        )
                     }
                 }
             )
@@ -246,43 +237,6 @@ fun TodoRow(item: TodoEntity, onToggle: (Boolean) -> Unit, onRemove: () -> Unit)
                 IconButton(onClick = { menu = true }) { Text("⋮", style = MaterialTheme.typography.titleLarge) }
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                     DropdownMenuItem(text = { Text("Löschen") }, onClick = { menu = false; onRemove() })
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun TrashScreen(vm: TrashViewModel, onBack: () -> Unit) {
-    val items by vm.trashed.collectAsState()
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                navigationIcon = { IconButton(onClick = onBack) { Text("←", style = MaterialTheme.typography.titleLarge) } },
-                title = { Text("Papierkorb") }
-            )
-        }
-    ) { inner ->
-        Column(Modifier.fillMaxSize().padding(inner).padding(12.dp)) {
-            if (items.isEmpty()) {
-                Text("Papierkorb ist leer.", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
-            } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(items, key = { it.id }) { p ->
-                        Surface(shape = MaterialTheme.shapes.large, tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
-                            Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Column(Modifier.weight(1f)) {
-                                    Text(p.name)
-                                    Spacer(Modifier.height(2.dp))
-                                    Text("Gelöscht: " + (p.trashedAt ?: 0L), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
-                                }
-                                TextButton(onClick = { vm.restore(p.id) }) { Text("Wiederherstellen") }
-                                Spacer(Modifier.width(4.dp))
-                                TextButton(onClick = { vm.hardDelete(p.id) }) { Text("Endgültig löschen") }
-                            }
-                        }
-                    }
                 }
             }
         }

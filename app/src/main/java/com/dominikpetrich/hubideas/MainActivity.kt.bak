@@ -4,7 +4,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,25 +21,18 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.dominikpetrich.hubideas.ui.NoteViewModel
 import com.dominikpetrich.hubideas.ui.NoteViewModelFactory
-import com.dominikpetrich.hubideas.ui.ProjectViewModel
-import com.dominikpetrich.hubideas.ui.ProjectViewModelFactory
-import com.dominikpetrich.hubideas.data.local.entity.ProjectEntity
-import kotlinx.coroutines.launch
-
-
 
 class MainActivity : ComponentActivity() {
-    private val noteVm by viewModels<NoteViewModel> { NoteViewModelFactory(applicationContext) }
-    private val projectVm by viewModels<ProjectViewModel> { ProjectViewModelFactory(applicationContext) }
+    private val vm by viewModels<NoteViewModel> { NoteViewModelFactory(applicationContext) }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { HubideasApp(noteVm, projectVm) }
+        setContent { HubideasApp(vm) }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HubideasApp(noteVm: NoteViewModel, projectVm: ProjectViewModel) {
+fun HubideasApp(vm: NoteViewModel) {
     val DarkColors = darkColorScheme(
         primary = Color(0xFF00C853), onPrimary = Color(0xFF001408),
         secondary = Color(0xFF1DE9B6), onSecondary = Color(0xFF001410),
@@ -49,25 +41,15 @@ fun HubideasApp(noteVm: NoteViewModel, projectVm: ProjectViewModel) {
     )
     MaterialTheme(colorScheme = DarkColors) {
         Scaffold(containerColor = DarkColors.background, topBar = { CenterAlignedTopAppBar(title = { Text("ideahub") }) }) { inner ->
-            Box(Modifier.fillMaxSize().padding(inner)) { NotesScreen(noteVm, projectVm) }
+            Box(Modifier.fillMaxSize().padding(inner)) { NotesScreen(vm) }
         }
     }
 }
 
 @Composable
-fun NotesScreen(noteVm: NoteViewModel, projectVm: ProjectViewModel) {
+fun NotesScreen(vm: NoteViewModel) {
     var noteText by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
-    val notes by noteVm.notes.collectAsState()
-    val projects by projectVm.projects.collectAsState()
-
-    // Mapping projectId -> name for chip
-    val projectNameOf by remember(projects) {
-        mutableStateOf(projects.associate { it.id to it.name })
-    }
-
-    // Project picker state
-    var pickerNoteId by remember { mutableStateOf<Long?>(null) }
-    val scope = rememberCoroutineScope()
+    val notes by vm.notes.collectAsState()
 
     Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Column(Modifier.widthIn(max = 620.dp).fillMaxWidth()) {
@@ -77,10 +59,10 @@ fun NotesScreen(noteVm: NoteViewModel, projectVm: ProjectViewModel) {
                         value = noteText, onValueChange = { noteText = it }, placeholder = { Text("Neue Notiz…") },
                         maxLines = 3, modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onDone = { val t = noteText.text.trim(); if (t.isNotEmpty()) { noteVm.add(t); noteText = TextFieldValue("") } })
+                        keyboardActions = KeyboardActions(onDone = { val t = noteText.text.trim(); if (t.isNotEmpty()) { vm.add(t); noteText = TextFieldValue("") } })
                     )
                     Spacer(Modifier.width(8.dp))
-                    FilledTonalButton(onClick = { val t = noteText.text.trim(); if (t.isNotEmpty()) { noteVm.add(t); noteText = TextFieldValue("") } }) { Text("Hinzufügen") }
+                    FilledTonalButton(onClick = { val t = noteText.text.trim(); if (t.isNotEmpty()) { vm.add(t); noteText = TextFieldValue("") } }) { Text("Hinzufügen") }
                 }
             }
             Spacer(Modifier.height(12.dp))
@@ -91,111 +73,31 @@ fun NotesScreen(noteVm: NoteViewModel, projectVm: ProjectViewModel) {
             } else {
                 LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(notes, key = { it.id }) { item ->
-                        val pname = projectNameOf[item.projectId] ?: "Inbox"
                         NoteRow(
                             text = item.content,
-                            projectName = pname,
-                            onRename = { newText -> noteVm.rename(item.id, newText) },
-                            onChangeProject = { pickerNoteId = item.id },
-                            onRemove = { noteVm.delete(item.id) }
+                            onRename = { newText -> vm.rename(item.id, newText) },
+                            onRemove = { vm.delete(item.id) }
                         )
                     }
                 }
             }
         }
     }
-
-    // Dialog for selecting/creating a project
-    val currentNoteId = pickerNoteId
-    if (currentNoteId != null) {
-        ProjectPickerDialog(
-            projects = projects,
-            onSelect = { p ->
-                scope.launch { noteVm.move(currentNoteId, p.id) }
-                pickerNoteId = null
-            },
-            onCreate = { name ->
-                scope.launch {
-                    val id = projectVm.ensureProjectId(name)
-                    noteVm.move(currentNoteId, id)
-                    pickerNoteId = null
-                }
-            },
-            onDismiss = { pickerNoteId = null }
-        )
-    }
 }
 
 @Composable
-fun ProjectChip(name: String) {
-    Surface(shape = MaterialTheme.shapes.small, tonalElevation = 1.dp) {
-        Text(name, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelMedium)
-    }
-}
-
-@Composable
-fun ProjectPickerDialog(
-    projects: List<ProjectEntity>,
-    onSelect: (ProjectEntity) -> Unit,
-    onCreate: (String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    var newName by rememberSaveable { mutableStateOf("") }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Projekt auswählen") },
-        text = {
-            Column(Modifier.fillMaxWidth()) {
-                Box(Modifier.heightIn(max = 260.dp).fillMaxWidth()) {
-                    LazyColumn(Modifier.fillMaxSize()) {
-                        items(projects, key = { it.id }) { p ->
-                            Row(Modifier.fillMaxWidth().clickable { onSelect(p) }.padding(vertical = 10.dp)) {
-                                Text(p.name)
-                            }
-                        }
-                    }
-                }
-                Spacer(Modifier.height(12.dp))
-                OutlinedTextField(
-                    value = newName,
-                    onValueChange = { newName = it },
-                    singleLine = true,
-                    label = { Text("Neues Projekt") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { val t = newName.trim(); if (t.isNotEmpty()) onCreate(t) }, enabled = newName.trim().isNotEmpty()) { Text("Erstellen & zuordnen") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Schließen") } }
-    )
-}
-
-@Composable
-fun NoteRow(
-    text: String,
-    projectName: String,
-    onRename: (String) -> Unit,
-    onChangeProject: () -> Unit,
-    onRemove: () -> Unit
-) {
+fun NoteRow(text: String, onRename: (String) -> Unit, onRemove: () -> Unit) {
     var menuExpanded by remember { mutableStateOf(false) }
     var showRename by remember { mutableStateOf(false) }
     var tempText by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
     Surface(shape = MaterialTheme.shapes.large, tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                ProjectChip(projectName)
-                Spacer(Modifier.width(8.dp))
-                Text(text = text, modifier = Modifier.weight(1f))
-                Box {
-                    IconButton(onClick = { menuExpanded = true }) { Text("⋮", style = MaterialTheme.typography.titleLarge) }
-                    DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-                        DropdownMenuItem(text = { Text("Umbenennen") }, onClick = { tempText = TextFieldValue(text); menuExpanded = false; showRename = true })
-                        DropdownMenuItem(text = { Text("Projekt ändern") }, onClick = { menuExpanded = false; onChangeProject() })
-                        DropdownMenuItem(text = { Text("Löschen") }, onClick = { menuExpanded = false; onRemove() })
-                    }
+        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(text = text, modifier = Modifier.weight(1f))
+            Box {
+                IconButton(onClick = { menuExpanded = true }) { Text("⋮", style = MaterialTheme.typography.titleLarge) }
+                DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                    DropdownMenuItem(text = { Text("Umbenennen") }, onClick = { tempText = TextFieldValue(text); menuExpanded = false; showRename = true })
+                    DropdownMenuItem(text = { Text("Löschen") }, onClick = { menuExpanded = false; onRemove() })
                 }
             }
         }

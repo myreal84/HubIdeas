@@ -1,29 +1,28 @@
 package com.dominikpetrich.hubideas.data.local.entity
 
-import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(
-    tableName = "notes",
+    tableName = "todos",
     foreignKeys = [
         ForeignKey(
             entity = ProjectEntity::class,
             parentColumns = ["id"],
             childColumns = ["projectId"],
-            onDelete = ForeignKey.RESTRICT,
+            onDelete = ForeignKey.CASCADE,
             onUpdate = ForeignKey.CASCADE
         )
     ],
     indices = [Index("projectId")]
 )
-data class NoteEntity(
+data class TodoEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val content: String,
+    val projectId: Long,
+    val title: String,
+    val isDone: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
-    @ColumnInfo(defaultValue = "1")
-    val projectId: Long = 1L,
     val trashedAt: Long? = null
 )

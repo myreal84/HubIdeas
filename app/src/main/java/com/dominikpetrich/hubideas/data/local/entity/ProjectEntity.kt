@@ -14,5 +14,7 @@ data class ProjectEntity(
     val description: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long? = null,
-    val archivedAt: Long? = null
+    val archivedAt: Long? = null,
+    val isDone: Boolean = false,
+    val trashedAt: Long? = null
 )
