@@ -106,13 +106,66 @@ app/src/main/java/com/.../hubideas/
 
 ---
 
-## 🗺️ Roadmap / Nächste Schritte
-- 🔎 Suche/Filter, Prioritäten, Fälligkeitsdaten
-- 🔔 Sanfte Erinnerungen („lange nicht bearbeitet“)
-- 🗒️ Notes-Ansicht im Projekt-Detail (lesen/bearbeiten)
-- ✂️ KI-gestützte Projektnamen (Original bleibt als Notiz erhalten)
-- ☁️ Sync/Backup (z. B. Firestore)
-- 🎨 UI-Polish, Animationen, Tests
+## Roadmap
+
+**Legende:** ✅ erledigt · 🟡 in Arbeit · 🔜 als Nächstes · 🧭 später
+
+### Aktueller Stand
+- ✅ Dark Theme & Grundlayout
+- ✅ Startseite = Projektübersicht (mit ⋮-Menü, Papierkorb erreichbar)
+- ✅ Projekt-Detail mit To-Dos (⋮-Menü je To-Do)
+- ✅ Papierkorb (Trash) statt Inbox
+- ✅ Tabs im Projekt-Detail sichtbar („To-Dos | Notizen“)
+- 🟡 Beim Projekt-Anlegen wird **automatisch 1 To-Do** mit gleichem Namen erstellt *(kein doppeltes Anlegen als Notiz)*
+
+---
+
+### Nächste Schritte (priorisiert)
+
+#### 1) To-Do ↔ Notiz konvertieren (ohne Duplikate) 🔜
+- To-Do: ⋮ → **„Zu Notiz verschieben“** (im selben Projekt)
+- Notiz: ⋮ → **„Zu To-Do verschieben“**
+- Transaktional in Room (FK-sicher), UI-Feedback via Snackbar
+
+#### 2) Room stabilisieren / Migrationssicherheit 🔜
+- Baseline-Schema exportieren, Version hochziehen
+- AutoMigrations wo möglich, 1 manuelle Migration falls nötig
+- Ein einfacher Migrationstest (Instrumented/Local)
+
+#### 3) Papierkorb: Auto-Löschung + Undo 🔜
+- Auto-Purge nach **30 Tagen** via WorkManager
+- Snackbar „Rückgängig“ nach „In den Papierkorb“
+- Trash-Ansicht bleibt über Startseiten-⋮ erreichbar
+
+#### 4) #Tags für Projekte 🔜
+- **Datenmodell:** `TagEntity`, `ProjectTagCrossRef (n:m)`
+- **UI Anzeige:** kleine, dezente **Chips unter dem Projekttitel**, anklickbar
+- **Bearbeiten:** Projekt-⋮ → **„Tags bearbeiten“** (Auswahl/Erstellen/Löschen)
+- **Filter:** Tag-Chips/Filterzeile auf der Startseite; (später: Suche mit `#tag`)
+
+#### 5) Notizen-Tab (MVP) 🔜
+- Leseliste der Notizen im Projekt
+- ⋮ je Notiz: Umbenennen, Löschen (→ Trash), **„Zu To-Do verschieben“**
+- (Später: Inline-Edit, Markdown-Light, Suche)
+
+#### 6) Fälligkeiten **nur pro To-Do** (optional) 🔜
+- Felder: `dueDate: Long?`, `reminderEnabled: Boolean`
+- Setzen über To-Do-⋮ → **„Fällig am…“**, **„Snooze…“**
+- Benachrichtigung via WorkManager; **kein** globaler Kalenderzwang
+
+---
+
+### Später / Ideen (nice to have) 🧭
+- **Random Erinnerungen**: smarte Nudges bei inaktiven Projekten  
+  (Einstellungen: Häufigkeit, Zeitfenster, Quiet Hours; alles lokal)
+- **AI-Assist (optional):**  
+  - Projektnamen vorschlagen/kürzen  
+  - To-Do-Vorschläge aus freier Notiz  
+  - Tag-Vorschläge aus Inhalt (manuell bestätigbar)
+- **Quality & UX:**  
+  - Unit/UI-Tests, Export/Import (JSON), Share-Target („Teilen mit HubIdeas“), Homescreen-Widget  
+  - Smart-Sort (aktive/überfällige Projekte zuerst), Bulk-Actions auf Startseite
+
 
 ---
 
