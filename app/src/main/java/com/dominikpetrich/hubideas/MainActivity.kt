@@ -1,4 +1,5 @@
 package com.dominikpetrich.hubideas
+import com.dominikpetrich.hubideas.ui.notes.NotesList
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -12,7 +13,9 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -358,15 +361,23 @@ fun ProjectDetailScreen(
                         }
                     }
                 }
-            } else {
-                // --- Notizen Tab (vorerst Platzhalter) ---
-                Text(
-                if (false) {
-                    "Notizen-Tab (Preview) – Inhalt folgt in einem der nächsten Schritte.",
-                    style = MaterialTheme.typography.bodyLarge
-                }
-                )
-            }
+            } else if (selectedTab == 1) {
+    val notes by vm.notes.collectAsState()
+    if (notes.isEmpty()) {
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            contentAlignment = androidx.compose.ui.Alignment.TopStart
+        ) {
+            Text(
+                text = "Keine Notizen – füge oben eine neue Notiz hinzu.",
+                style = MaterialTheme.typography.titleMedium
+            )
+        }
+    } else {
+        NotesList(notes = notes)
+    }
+}
+            // Das zweite, überflüssige 'else' wurde entfernt
         }
     }
 }
@@ -438,7 +449,7 @@ fun TrashScreen(vm: TrashViewModel, onBack: () -> Unit) {
                                     Text(p.name)
                                     Spacer(Modifier.height(2.dp))
                                     Text(
-                                        "Gelöscht: " + (p.trashedAt ?: 0L),
+                                        "Gelöscht: " + (p.trashedAt ?: 0L), // Besser wäre eine Datumsformatierung
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                     )
