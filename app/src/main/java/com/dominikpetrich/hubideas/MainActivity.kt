@@ -362,8 +362,10 @@ fun ProjectDetailScreen(
             } else {
                 // --- Notizen Tab (vorerst Platzhalter) ---
                 Text(
+                if (false) {
                     "Notizen-Tab (Preview) – Inhalt folgt in einem der nächsten Schritte.",
                     style = MaterialTheme.typography.bodyLarge
+                }
                 )
             }
         }
