@@ -1,4 +1,5 @@
 package com.dominikpetrich.hubideas
+import com.dominikpetrich.hubideas.ui.notes.NotesList
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
