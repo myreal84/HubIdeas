@@ -58,3 +58,10 @@ Thumbs.db
 # helper scripts (ignore)
 *.sh
 !gradlew
+
+# --- Backups & Duplikate ---
+**/duplicate_backups_*/
+**/duplicate_backups_*
+*.bak
+*.bak.*
+# ---------------------------
