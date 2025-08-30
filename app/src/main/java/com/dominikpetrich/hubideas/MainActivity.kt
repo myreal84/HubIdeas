@@ -1,11 +1,4 @@
 package com.dominikpetrich.hubideas
-import com.dominikpetrich.hubideas.ui.components.ProjectDetailTabs
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -18,7 +11,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -28,22 +20,26 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.dominikpetrich.hubideas.ui.ProjectListViewModel
-import com.dominikpetrich.hubideas.ui.ProjectListViewModelFactory
+import com.dominikpetrich.hubideas.data.local.entity.TodoEntity
 import com.dominikpetrich.hubideas.ui.ProjectDetailViewModel
 import com.dominikpetrich.hubideas.ui.ProjectDetailViewModelFactory
+import com.dominikpetrich.hubideas.ui.ProjectListViewModel
+import com.dominikpetrich.hubideas.ui.ProjectListViewModelFactory
 import com.dominikpetrich.hubideas.ui.TrashViewModel
 import com.dominikpetrich.hubideas.ui.TrashViewModelFactory
-import com.dominikpetrich.hubideas.data.local.entity.TodoEntity
+import com.dominikpetrich.hubideas.ui.components.ProjectDetailTabs
 
 class MainActivity : ComponentActivity() {
-    private val listVm by viewModels<ProjectListViewModel> { ProjectListViewModelFactory(applicationContext) }
+    private val listVm by viewModels<ProjectListViewModel> {
+        ProjectListViewModelFactory(applicationContext)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent { HubideasApp(listVm) }
@@ -53,14 +49,16 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HubideasApp(listVm: ProjectListViewModel) {
-    val DarkColors = darkColorScheme(
+    val darkColors = darkColorScheme(
         primary = Color(0xFF00C853), onPrimary = Color(0xFF001408),
         secondary = Color(0xFF1DE9B6), onSecondary = Color(0xFF001410),
         background = Color(0xFF0E1116), onBackground = Color(0xFFE6EAEF),
         surface = Color(0xFF12151B), onSurface = Color(0xFFF1F4F8)
     )
+
     val nav = rememberNavController()
-    MaterialTheme(colorScheme = DarkColors) {
+
+    MaterialTheme(colorScheme = darkColors) {
         Box(Modifier.fillMaxSize()) {
             NavHost(navController = nav, startDestination = "projects") {
                 composable("projects") {
@@ -84,9 +82,8 @@ fun HubideasApp(listVm: ProjectListViewModel) {
                     ProjectDetailScreen(vm, onBack = { nav.popBackStack() })
                 }
                 composable("trash") {
-                    val vm: TrashViewModel = viewModel(
-                        factory = TrashViewModelFactory(LocalContext.current.applicationContext)
-                    )
+                    val vm: TrashViewModel =
+                        viewModel(factory = TrashViewModelFactory(LocalContext.current.applicationContext))
                     TrashScreen(vm, onBack = { nav.popBackStack() })
                 }
             }
@@ -96,10 +93,14 @@ fun HubideasApp(listVm: ProjectListViewModel) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProjectListScreen(vm: ProjectListViewModel, onOpen: (Long) -> Unit, onOpenTrash: () -> Unit) {
+fun ProjectListScreen(
+    vm: ProjectListViewModel,
+    onOpen: (Long) -> Unit,
+    onOpenTrash: () -> Unit
+) {
     var text by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
     val projects by vm.projects.collectAsState()
-    var menu by remember { mutableStateOf(false) }
+    var menuOpen by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -107,9 +108,14 @@ fun ProjectListScreen(vm: ProjectListViewModel, onOpen: (Long) -> Unit, onOpenTr
                 title = { Text("ideahub") },
                 actions = {
                     Box {
-                        IconButton(onClick = { menu = true }) { Text("⋮", style = MaterialTheme.typography.titleLarge) }
-                        DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                            DropdownMenuItem(text = { Text("Papierkorb") }, onClick = { menu = false; onOpenTrash() })
+                        IconButton(onClick = { menuOpen = true }) {
+                            Text("⋮", style = MaterialTheme.typography.titleLarge)
+                        }
+                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Papierkorb") },
+                                onClick = { menuOpen = false; onOpenTrash() }
+                            )
                         }
                     }
                 }
@@ -117,35 +123,62 @@ fun ProjectListScreen(vm: ProjectListViewModel, onOpen: (Long) -> Unit, onOpenTr
         }
     ) { inner ->
         Column(
-            Modifier.fillMaxSize().padding(inner).padding(horizontal = 12.dp, vertical = 6.dp),
+            Modifier
+                .fillMaxSize()
+                .padding(inner)
+                .padding(horizontal = 12.dp, vertical = 6.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Column(Modifier.widthIn(max = 620.dp).fillMaxWidth()) {
-                Surface(shape = MaterialTheme.shapes.large, tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(10.dp)) {
+                Surface(
+                    shape = MaterialTheme.shapes.large,
+                    tonalElevation = 2.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(10.dp)
+                    ) {
                         OutlinedTextField(
-                            value = text, onValueChange = { text = it }, placeholder = { Text("Neues Projekt…") },
-                            maxLines = 2, modifier = Modifier.weight(1f),
+                            value = text,
+                            onValueChange = { text = it },
+                            placeholder = { Text("Neues Projekt…") },
+                            maxLines = 2,
+                            modifier = Modifier.weight(1f),
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                             keyboardActions = KeyboardActions(onDone = {
                                 val t = text.text.trim()
-                                if (t.isNotEmpty()) { vm.addProject(t); text = TextFieldValue("") }
+                                if (t.isNotEmpty()) {
+                                    vm.addProject(t)
+                                    text = TextFieldValue("")
+                                }
                             })
                         )
                         Spacer(Modifier.width(8.dp))
                         FilledTonalButton(onClick = {
                             val t = text.text.trim()
-                            if (t.isNotEmpty()) { vm.addProject(t); text = TextFieldValue("") }
+                            if (t.isNotEmpty()) {
+                                vm.addProject(t)
+                                text = TextFieldValue("")
+                            }
                         }) { Text("Erstellen") }
                     }
                 }
+
                 Spacer(Modifier.height(12.dp))
                 HorizontalDivider()
                 Spacer(Modifier.height(6.dp))
+
                 if (projects.isEmpty()) {
-                    Text("Noch keine Projekte. Oben eines anlegen.", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                    Text(
+                        "Noch keine Projekte. Oben eines anlegen.",
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
                 } else {
-                    LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         items(projects, key = { it.id }) { p ->
                             ProjectRow(
                                 name = p.name,
@@ -162,28 +195,63 @@ fun ProjectListScreen(vm: ProjectListViewModel, onOpen: (Long) -> Unit, onOpenTr
 }
 
 @Composable
-fun ProjectRow(name: String, onOpen: () -> Unit, onRename: (String) -> Unit, onRemove: () -> Unit) {
+private fun ProjectRow(
+    name: String,
+    onOpen: () -> Unit,
+    onRename: (String) -> Unit,
+    onRemove: () -> Unit
+) {
     var menu by remember { mutableStateOf(false) }
     var showRename by remember { mutableStateOf(false) }
     var temp by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue(name)) }
-    Surface(shape = MaterialTheme.shapes.large, tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth().clickable { onOpen() }) {
+
+    Surface(
+        shape = MaterialTheme.shapes.large,
+        tonalElevation = 2.dp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onOpen() }
+    ) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(text = name, modifier = Modifier.weight(1f))
             Box {
-                IconButton(onClick = { menu = true }) { Text("⋮", style = MaterialTheme.typography.titleLarge) }
+                IconButton(onClick = { menu = true }) {
+                    Text("⋮", style = MaterialTheme.typography.titleLarge)
+                }
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                    DropdownMenuItem(text = { Text("Umbenennen") }, onClick = { menu = false; showRename = true })
-                    DropdownMenuItem(text = { Text("In Papierkorb") }, onClick = { menu = false; onRemove() })
+                    DropdownMenuItem(
+                        text = { Text("Umbenennen") },
+                        onClick = { menu = false; showRename = true }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("In Papierkorb") },
+                        onClick = { menu = false; onRemove() }
+                    )
                 }
             }
         }
     }
+
     if (showRename) {
         AlertDialog(
             onDismissRequest = { showRename = false },
             title = { Text("Projekt umbenennen") },
-            text = { OutlinedTextField(value = temp, onValueChange = { temp = it }, modifier = Modifier.fillMaxWidth()) },
-            confirmButton = { TextButton(onClick = { val t = temp.text.trim(); if (t.isNotEmpty()) { onRename(t); showRename = false } }) { Text("Speichern") } },
+            text = {
+                OutlinedTextField(
+                    value = temp,
+                    onValueChange = { temp = it },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val t = temp.text.trim()
+                    if (t.isNotEmpty()) {
+                        onRename(t)
+                        showRename = false
+                    }
+                }) { Text("Speichern") }
+            },
             dismissButton = { TextButton(onClick = { showRename = false }) { Text("Abbrechen") } }
         )
     }
@@ -191,71 +259,141 @@ fun ProjectRow(name: String, onOpen: () -> Unit, onRename: (String) -> Unit, onR
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProjectDetailScreen(vm: ProjectDetailViewModel, onBack: () -> Unit) {
+fun ProjectDetailScreen(
+    vm: ProjectDetailViewModel,
+    onBack: () -> Unit
+) {
     val project by vm.project.collectAsState()
     val todos by vm.todos.collectAsState()
-    var selectedTab by rememberSaveable { mutableStateOf(0) }
+    var selectedTab by rememberSaveable { mutableStateOf(0) } // 0 = To-Dos, 1 = Notizen
+    var text by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
 
     Scaffold(
-        topBar = { Column {
-
+        topBar = {
             TopAppBar(
-                navigationIcon = { IconButton(onClick = onBack) { Text("←", style = MaterialTheme.typography.titleLarge) } },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Text("←", style = MaterialTheme.typography.titleLarge)
+                    }
+                },
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(project?.name ?: "…")
                         Spacer(Modifier.width(8.dp))
-                        Checkbox(checked = project?.isDone == true, onCheckedChange = { vm.toggleProject(it) })
+                        Checkbox(
+                            checked = project?.isDone == true,
+                            onCheckedChange = { vm.toggleProject(it) }
+                        )
                     }
                 }
             )
-        
-                ProjectDetailTabs(selected = selectedTab, onSelected = { selectedTab = it })
-            }}
+        }
     ) { inner ->
-        Column(Modifier.fillMaxSize().padding(inner).padding(12.dp)) {
-            var text by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
-            Surface(shape = MaterialTheme.shapes.large, tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(10.dp)) {
-                    OutlinedTextField(
-                        value = text, onValueChange = { text = it }, placeholder = { Text("Neue Aufgabe/Notiz…") },
-                        maxLines = 2, modifier = Modifier.weight(1f),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onDone = {
-                            val t = text.text.trim(); if (t.isNotEmpty()) { vm.addTodo(t); text = TextFieldValue("") }
-                        })
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    FilledTonalButton(onClick = {
-                        val t = text.text.trim(); if (t.isNotEmpty()) { vm.addTodo(t); text = TextFieldValue("") }
-                    }) { Text("Hinzufügen") }
-                }
-            }
-            if (todos.isEmpty()) {
-                Text("Noch keine Aufgaben.", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
-            } else {
-                LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(todos, key = { it.id }) { t ->
-                        TodoRow(t, onToggle = { vm.toggleTodo(t.id, it) }, onRemove = { vm.deleteTodo(t.id) })
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(inner)
+                .padding(12.dp)
+        ) {
+            // Tabs direkt unter der Kopfzeile
+            ProjectDetailTabs(selected = selectedTab, onSelected = { selectedTab = it })
+
+            Spacer(Modifier.height(12.dp))
+
+            if (selectedTab == 0) {
+                // --- To-Do Tab ---
+                Surface(
+                    shape = MaterialTheme.shapes.large,
+                    tonalElevation = 2.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(10.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = text,
+                            onValueChange = { text = it },
+                            placeholder = { Text("Neue Aufgabe/Notiz…") },
+                            maxLines = 2,
+                            modifier = Modifier.weight(1f),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(onDone = {
+                                val t = text.text.trim()
+                                if (t.isNotEmpty()) {
+                                    vm.addTodo(t)
+                                    text = TextFieldValue("")
+                                }
+                            })
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        FilledTonalButton(onClick = {
+                            val t = text.text.trim()
+                            if (t.isNotEmpty()) {
+                                vm.addTodo(t)
+                                text = TextFieldValue("")
+                            }
+                        }) { Text("Hinzufügen") }
                     }
                 }
+
+                Spacer(Modifier.height(12.dp))
+
+                if (todos.isEmpty()) {
+                    Text(
+                        "Noch keine Aufgaben.",
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                } else {
+                    LazyColumn(
+                        Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(todos, key = { it.id }) { t ->
+                            TodoRow(
+                                item = t,
+                                onToggle = { vm.toggleTodo(t.id, it) },
+                                onRemove = { vm.deleteTodo(t.id) }
+                            )
+                        }
+                    }
+                }
+            } else {
+                // --- Notizen Tab (vorerst Platzhalter) ---
+                Text(
+                    "Notizen-Tab (Preview) – Inhalt folgt in einem der nächsten Schritte.",
+                    style = MaterialTheme.typography.bodyLarge
+                )
             }
         }
     }
 }
 
 @Composable
-fun TodoRow(item: TodoEntity, onToggle: (Boolean) -> Unit, onRemove: () -> Unit) {
+private fun TodoRow(
+    item: TodoEntity,
+    onToggle: (Boolean) -> Unit,
+    onRemove: () -> Unit
+) {
     var menu by remember { mutableStateOf(false) }
-    Surface(shape = MaterialTheme.shapes.large, tonalElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
+    Surface(
+        shape = MaterialTheme.shapes.large,
+        tonalElevation = 1.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Checkbox(checked = item.isDone, onCheckedChange = onToggle)
             Spacer(Modifier.width(6.dp))
             Text(text = item.title, modifier = Modifier.weight(1f))
             Box {
-                IconButton(onClick = { menu = true }) { Text("⋮", style = MaterialTheme.typography.titleLarge) }
+                IconButton(onClick = { menu = true }) {
+                    Text("⋮", style = MaterialTheme.typography.titleLarge)
+                }
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                    DropdownMenuItem(text = { Text("Löschen") }, onClick = { menu = false; onRemove() })
+                    DropdownMenuItem(
+                        text = { Text("Löschen") },
+                        onClick = { menu = false; onRemove() }
+                    )
                 }
             }
         }
@@ -266,26 +404,42 @@ fun TodoRow(item: TodoEntity, onToggle: (Boolean) -> Unit, onRemove: () -> Unit)
 @Composable
 fun TrashScreen(vm: TrashViewModel, onBack: () -> Unit) {
     val items by vm.trashed.collectAsState()
+
     Scaffold(
         topBar = {
             TopAppBar(
-                navigationIcon = { IconButton(onClick = onBack) { Text("←", style = MaterialTheme.typography.titleLarge) } },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Text("←", style = MaterialTheme.typography.titleLarge)
+                    }
+                },
                 title = { Text("Papierkorb") }
             )
         }
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner).padding(12.dp)) {
             if (items.isEmpty()) {
-                Text("Papierkorb ist leer.", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                Text(
+                    "Papierkorb ist leer.",
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(items, key = { it.id }) { p ->
-                        Surface(shape = MaterialTheme.shapes.large, tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
+                        Surface(
+                            shape = MaterialTheme.shapes.large,
+                            tonalElevation = 2.dp,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                             Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
                                     Text(p.name)
                                     Spacer(Modifier.height(2.dp))
-                                    Text("Gelöscht: " + (p.trashedAt ?: 0L), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                                    Text(
+                                        "Gelöscht: " + (p.trashedAt ?: 0L),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                    )
                                 }
                                 TextButton(onClick = { vm.restore(p.id) }) { Text("Wiederherstellen") }
                                 Spacer(Modifier.width(4.dp))
